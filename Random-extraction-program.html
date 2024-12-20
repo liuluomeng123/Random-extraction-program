@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>随机抽取器</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f8f4ff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .container {
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            width: 320px;
+            position: relative;
+        }
+        h1 {
+            text-align: center;
+            color: #9b59b6;
+            margin-bottom: 20px;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .option span {
+            width: 20px;
+            text-align: right;
+            margin-right: 5px;
+        }
+        .option input {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            margin-right: 10px;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+        }
+        .option button {
+            background-color: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 8px;
+            cursor: pointer;
+        }
+        .add-option, .batch-add-option {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 20px;
+        }
+        .add-option button, .batch-add-option button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+        .draw-count {
+            display: flex;
+            justify-content: center;
+            margin-bottom: 10px;
+        }
+        .draw-count input {
+            width: 50px;
+            padding: 5px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            text-align: center;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+        }
+        .warning {
+            color: #e74c3c;
+            text-align: center;
+            font-size: 14px;
+            margin-top: -10px;
+            margin-bottom: 10px;
+            display: none; /* 初始隐藏 */
+        }
+        .start-draw {
+            width: 100%;
+            background-color: #8e44ad;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+        .result {
+            text-align: center;
+            font-size: 24px;
+            color: #8e44ad;
+            min-height: 30px;
+        }
+        .toast-container {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+        }
+        .toast {
+            background-color: #f44336;
+            color: white;
+            padding: 10px;
+            margin-top: 10px;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+            animation: fadeInOut 5s forwards;
+        }
+        @keyframes fadeInOut {
+            0% { opacity: 0; transform: translateY(20px); }
+            10%, 90% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-20px); }
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background-color: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            padding: 20px;
+            z-index: 1001;
+            width: 320px;
+        }
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        .modal-header h2 {
+            margin: 0;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            flex: 1;
+        }
+        .modal-header button {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+        }
+        .modal-body {
+            margin-bottom: 20px;
+        }
+        .modal-body textarea {
+            width: 100%;
+            height: 100px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            resize: none;
+            font-family: 'Arial', sans-serif;
+            font-size: 14px;
+        }
+        .modal-footer {
+            display: flex;
+            justify-content: flex-end;
+        }
+        .modal-footer button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            padding: 10px;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>随机抽取器</h1>
+        <div id="options-container">
+            <div class="option">
+                <span>1.</span>
+                <input type="text" placeholder="选项1">
+                <button onclick="removeOption(this)">×</button>
+            </div>
+            <div class="option">
+                <span>2.</span>
+                <input type="text" placeholder="选项2">
+                <button onclick="removeOption(this)">×</button>
+            </div>
+        </div>
+        <div class="add-option">
+            <button id="add-option">+ 添加选项</button>
+        </div>
+        <div class="batch-add-option">
+            <button id="batch-add-option">批量添加选项</button>
+        </div>
+        <div class="draw-count">
+            <label for="draw-count-input">抽取个数：</label>
+            <input id="draw-count-input" type="number" value="1" min="1">
+        </div>
+        <div id="warning" class="warning">抽取个数必须在1到选项个数之间</div>
+        <button id="start-draw" class="start-draw">开始抽取</button>
+        <div id="result" class="result"></div>
+        <div id="toast-container" class="toast-container"></div>
+    </div>
+
+    <div id="batch-add-modal" class="modal">
+        <div class="modal-header">
+            <h2>批量添加选项</h2>
+            <button onclick="closeBatchAddModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p>在下方输入框输入选项可快捷添加，每个选项之间用换行隔开<br>例：<br>选项1<br>选项2<br>选项3</p>
+            <textarea id="batch-add-input"></textarea>
+        </div>
+        <div class="modal-footer">
+            <button id="batch-add-button" onclick="addBatchOptions()">批量添加选项</button>
+        </div>
+    </div>
+
+    <script>
+        const optionsContainer = document.getElementById('options-container');
+        const addOptionButton = document.getElementById('add-option');
+        const batchAddOptionButton = document.getElementById('batch-add-option');
+        const startDrawButton = document.getElementById('start-draw');
+        const resultDisplay = document.getElementById('result');
+        const toastContainer = document.getElementById('toast-container');
+        const drawCountInput = document.getElementById('draw-count-input');
+        const warning = document.getElementById('warning');
+        const batchAddModal = document.getElementById('batch-add-modal');
+        const batchAddInput = document.getElementById('batch-add-input');
+        const batchAddButton = document.getElementById('batch-add-button');
+
+        function validateDrawCount() {
+            const drawCount = parseInt(drawCountInput.value, 10);
+            const optionsCount = optionsContainer.querySelectorAll('input[type="text"]').length;
+
+            if (drawCount < 1 || drawCount > optionsCount) {
+                warning.textContent = `抽取个数必须在1~${optionsCount}之间`;
+                warning.style.display = 'block';
+            } else {
+                warning.style.display = 'none';
+            }
+        }
+
+        function updateOptionNumbers() {
+            const options = optionsContainer.querySelectorAll('.option');
+            options.forEach((option, index) => {
+                option.querySelector('span').textContent = `${index + 1}.`;
+            });
+        }
+
+        addOptionButton.addEventListener('click', () => {
+            const optionCount = optionsContainer.children.length + 1;
+            const newOption = document.createElement('div');
+            newOption.className = 'option';
+            newOption.innerHTML = `<span>${optionCount}.</span><input type="text" placeholder="选项${optionCount}"><button onclick="removeOption(this)">×</button>`;
+            optionsContainer.appendChild(newOption);
+            validateDrawCount();
+        });
+
+        batchAddOptionButton.addEventListener('click', () => {
+            batchAddModal.style.display = 'block';
+        });
+
+        batchAddInput.addEventListener('input', () => {
+            const inputText = batchAddInput.value.trim();
+            const newOptions = inputText.split('\n').filter(option => option.trim() !== '');
+            const uniqueOptions = Array.from(new Set(newOptions));
+            batchAddButton.textContent = `批量添加${uniqueOptions.length}个选项`;
+        });
+
+        drawCountInput.addEventListener('input', validateDrawCount);
+
+        startDrawButton.addEventListener('click', () => {
+            const inputs = optionsContainer.querySelectorAll('input[type="text"]');
+            const options = Array.from(inputs).map(input => input.value.trim());
+            const drawCount = parseInt(drawCountInput.value, 10);
+            const emptyIndices = [];
+            const duplicates = new Set();
+            const seen = new Set();
+
+            options.forEach((option, index) => {
+                if (!option) {
+                    emptyIndices.push(index + 1);
+                }
+                if (seen.has(option)) {
+                    duplicates.add(index + 1);
+                }
+                seen.add(option);
+            });
+
+            if (emptyIndices.length > 0) {
+                showToast(`错误：以下选项未填写（${emptyIndices.join(', ')}）`);
+                return;
+            }
+
+            if (duplicates.size > 0) {
+                showToast(`错误：包含重复选项（${Array.from(duplicates).join(', ')}）`);
+                return;
+            }
+
+            if (drawCount < 1 || drawCount > options.length) {
+                showToast(`错误：抽取个数必须在1~${options.length}之间`);
+                return;
+            }
+
+            resultDisplay.textContent = '抽取中...';
+
+            let intervalId = setInterval(() => {
+                const randomIndex = Math.floor(Math.random() * options.length);
+                resultDisplay.textContent = options[randomIndex];
+            }, 100); // 每100毫秒随机展示一个选项
+
+            setTimeout(() => {
+                clearInterval(intervalId);
+                const finalResults = [];
+                while (finalResults.length < drawCount) {
+                    const randomIndex = Math.floor(Math.random() * options.length);
+                    const selectedOption = options[randomIndex];
+                    if (!finalResults.includes(selectedOption)) {
+                        finalResults.push(selectedOption);
+                    }
+                }
+                resultDisplay.textContent = `抽取结果：${finalResults.join(', ')}`;
+            }, Math.random() * 3000 + 3000); // 3到6秒后停止
+        });
+
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'toast';
+            toast.textContent = message;
+            toastContainer.appendChild(toast);
+
+            setTimeout(() => {
+                toast.remove();
+            }, 5000); // Toast will disappear after 5 seconds
+        }
+
+        function removeOption(button) {
+            if (optionsContainer.children.length <= 2) {
+                showToast("最少需要保留2个选项");
+                return;
+            }
+            button.parentElement.remove();
+            updateOptionNumbers();
+            validateDrawCount();
+        }
+
+        function closeBatchAddModal() {
+            batchAddModal.style.display = 'none';
+        }
+
+        function addBatchOptions() {
+            const inputText = batchAddInput.value.trim();
+            const newOptions = inputText.split('\n').filter(option => option.trim() !== '');
+            const uniqueOptions = Array.from(new Set(newOptions));
+            const existingOptions = optionsContainer.querySelectorAll('input[type="text"]');
+            let emptyOptionIndex = 0;
+
+            uniqueOptions.forEach(optionText => {
+                while (emptyOptionIndex < existingOptions.length && existingOptions[emptyOptionIndex].value.trim() !== '') {
+                    emptyOptionIndex++;
+                }
+                if (emptyOptionIndex < existingOptions.length) {
+                    existingOptions[emptyOptionIndex].value = optionText;
+                } else {
+                    const newOption = document.createElement('div');
+                    newOption.className = 'option';
+                    newOption.innerHTML = `<span>${optionsContainer.children.length + 1}.</span><input type="text" value="${optionText}"><button onclick="removeOption(this)">×</button>`;
+                    optionsContainer.appendChild(newOption);
+                }
+            });
+
+            updateOptionNumbers();
+            validateDrawCount();
+            closeBatchAddModal();
+        }
+    </script>
+</body>
+</html>
